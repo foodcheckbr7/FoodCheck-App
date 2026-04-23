@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { configurarNotificacoes, pedirPermissaoNotificacao } from "./services/notificacoes";
 import LoginScreen from "./app/LoginScreen";
 import HomeScreen from "./app/HomeScreen";
 import AlimentosScreen from "./app/AlimentosScreen";
@@ -8,6 +9,15 @@ export default function App() {
   const [logado, setLogado] = useState(false);
   const [tela, setTela] = useState("home");
   const [filtroAlimentos, setFiltroAlimentos] = useState("todos");
+
+  useEffect(() => {
+    async function iniciarNotificacoes() {
+      await configurarNotificacoes();
+      await pedirPermissaoNotificacao();
+    }
+
+    iniciarNotificacoes();
+  }, []);
 
   if (!logado) {
     return <LoginScreen onLoginSuccess={() => setLogado(true)} />;

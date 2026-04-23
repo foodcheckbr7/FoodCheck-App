@@ -12,12 +12,17 @@ import {
   Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  agendarNotificacaoValidade,
+  cancelarNotificacao,
+} from "../services/notificacoes";
 
 type Alimento = {
   id: string;
   nome: string;
   dataCompra: string;
   dataValidade: string;
+  notificacaoId?: string | null;
 };
 
 type Desperdicio = {
@@ -221,7 +226,7 @@ export default function AlimentosScreen({
       if (!dataValidadeConvertida) {
         Alert.alert(
           "Erro",
-          "A data de validade deve estar no formato DD/MM/AAAA."
+          "A data de validade deve estar no formato DD/MM/AAAA.",
         );
         return;
       }
@@ -229,13 +234,26 @@ export default function AlimentosScreen({
       if (dataValidadeConvertida.getTime() < dataCompraConvertida.getTime()) {
         Alert.alert(
           "Erro",
-          "A data de validade não pode ser menor que a data da compra."
+          "A data de validade não pode ser menor que a data da compra.",
         );
         return;
       }
     }
 
     if (idEditando) {
+      const alimentoAntigo = alimentos.find((item) => item.id === idEditando);
+
+      await cancelarNotificacao(alimentoAntigo?.notificacaoId);
+
+      let novoNotificacaoId: string | null = null;
+
+      if (dataValidade.trim() !== "") {
+        novoNotificacaoId = await agendarNotificacaoValidade(
+          nome,
+          dataValidade,
+        );
+      }
+
       const listaAtualizada = alimentos.map((item) =>
         item.id === idEditando
           ? {
@@ -243,8 +261,9 @@ export default function AlimentosScreen({
               nome,
               dataCompra,
               dataValidade,
+              notificacaoId: novoNotificacaoId,
             }
-          : item
+          : item,
       );
 
       await salvarListaNoCelular(listaAtualizada);
@@ -259,11 +278,18 @@ export default function AlimentosScreen({
       return;
     }
 
+    let notificacaoId: string | null = null;
+
+    if (dataValidade.trim() !== "") {
+      notificacaoId = await agendarNotificacaoValidade(nome, dataValidade);
+    }
+
     const novoAlimento: Alimento = {
       id: Date.now().toString(),
       nome,
       dataCompra,
       dataValidade,
+      notificacaoId,
     };
 
     const novaLista = [novoAlimento, ...alimentos];
@@ -290,26 +316,30 @@ export default function AlimentosScreen({
     });
   }
 
-  function handleConsumido(id: string, nomeAlimento: string) {
+  function handleConsumido(item: Alimento) {
     Alert.alert(
       "Confirmar",
-      `Deseja marcar "${nomeAlimento}" como consumido?`,
+      `Deseja marcar "${item.nome}" como consumido?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
           text: "Sim",
           onPress: async () => {
-            const novaLista = alimentos.filter((item) => item.id !== id);
+            await cancelarNotificacao(item.notificacaoId);
+
+            const novaLista = alimentos.filter(
+              (alimento) => alimento.id !== item.id,
+            );
             await salvarListaNoCelular(novaLista);
 
-            if (idEditando === id) {
+            if (idEditando === item.id) {
               limparCampos();
             }
 
             Alert.alert("Sucesso", "Alimento removido da lista.");
           },
         },
-      ]
+      ],
     );
   }
 
@@ -323,10 +353,11 @@ export default function AlimentosScreen({
           text: "Descartar",
           style: "destructive",
           onPress: async () => {
+            await cancelarNotificacao(item.notificacaoId);
             await adicionarAoDesperdicio(item);
 
             const novaLista = alimentos.filter(
-              (alimento) => alimento.id !== item.id
+              (alimento) => alimento.id !== item.id,
             );
             await salvarListaNoCelular(novaLista);
 
@@ -337,7 +368,7 @@ export default function AlimentosScreen({
             Alert.alert("Sucesso", "Produto enviado para Desperdício.");
           },
         },
-      ]
+      ],
     );
   }
 
@@ -464,7 +495,7 @@ export default function AlimentosScreen({
                 ) : (
                   <TouchableOpacity
                     style={styles.botaoConsumido}
-                    onPress={() => handleConsumido(item.id, item.nome)}
+                    onPress={() => handleConsumido(item)}
                   >
                     <Text style={styles.textoBotaoConsumido}>Consumido</Text>
                   </TouchableOpacity>
