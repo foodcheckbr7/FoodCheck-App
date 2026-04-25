@@ -113,15 +113,6 @@ export default function HomeScreen({
         <View style={styles.header}>
           <Text style={styles.greeting}>Olá, Thiago Torres!</Text>
 
-          <View style={styles.bellContainer}>
-            <Text style={styles.bell}>🔔</Text>
-
-            {quantidadeVencendo > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{quantidadeVencendo}</Text>
-              </View>
-            )}
-          </View>
         </View>
 
         <View style={styles.card}>
@@ -148,6 +139,10 @@ export default function HomeScreen({
           <Text style={styles.arrow}>›</Text>
         </Pressable>
 
+        <Card label="Dentro da validade" backgroundColor="#DCFCE7" />
+        <Card label="Próximos do vencimento" backgroundColor="#FEF3C7" />
+        
+
         <View style={styles.bottomNav}>
           <View style={styles.navItemActive}>
             <Text style={styles.navIcon}>🏠</Text>
@@ -172,6 +167,20 @@ export default function HomeScreen({
       </View>
     </SafeAreaView>
   );
+}
+
+//Davi: em baixo eu criei um componente card caso queiram reutilizar
+
+function Card({label, backgroundColor}:{label: string, backgroundColor: string}) {
+  return (
+    <View style={[styles.menuItem, {backgroundColor}]}>
+          <View style={styles.menuLeft}>
+            <Text style={styles.menuIcon}></Text>
+            <Text style={styles.menuText}>{label}</Text>
+          </View>
+        </View>
+
+  )
 }
 
 const styles = StyleSheet.create({
