@@ -80,7 +80,7 @@ export default function HomeScreen({
 
         const diferencaEmMilissegundos = vencimento.getTime() - hoje.getTime();
         const diferencaEmDias = Math.ceil(
-          diferencaEmMilissegundos / (1000 * 60 * 60 * 24)
+          diferencaEmMilissegundos / (1000 * 60 * 60 * 24),
         );
 
         return diferencaEmDias >= 0 && diferencaEmDias <= 5;
@@ -112,7 +112,6 @@ export default function HomeScreen({
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.greeting}>Olá, Thiago Torres!</Text>
-
         </View>
 
         <View style={styles.card}>
@@ -139,9 +138,8 @@ export default function HomeScreen({
           <Text style={styles.arrow}>›</Text>
         </Pressable>
 
-        <Card label="Dentro da validade" backgroundColor="#DCFCE7" />
-        <Card label="Próximos do vencimento" backgroundColor="#FEF3C7" />
-        
+        <Card label="Dentro da validade" color="#166534" cardColor="#DCFCE7" circuloColor="#22C55E"/>
+        <Card label="Itens para acompanhar" color="#92400E" cardColor="#FEF3C7" circuloColor="#F59E0B"/>
 
         <View style={styles.bottomNav}>
           <View style={styles.navItemActive}>
@@ -171,16 +169,25 @@ export default function HomeScreen({
 
 //Davi: em baixo eu criei um componente card caso queiram reutilizar
 
-function Card({label, backgroundColor}:{label: string, backgroundColor: string}) {
+function Card({
+  label,
+  cardColor,
+  circuloColor,
+  color,
+}: {
+  label: string;
+  cardColor: string;
+  circuloColor: string;
+  color: string;
+}) {
   return (
-    <View style={[styles.menuItem, {backgroundColor}]}>
-          <View style={styles.menuLeft}>
-            <Text style={styles.menuIcon}></Text>
-            <Text style={styles.menuText}>{label}</Text>
-          </View>
-        </View>
-
-  )
+    <View style={[styles.menuItem, { backgroundColor: cardColor}]}>
+      <View style={styles.menuLeft}>
+        <View style={[styles.circulo, { backgroundColor: circuloColor}]} />
+        <Text style={[styles.menuText, {color}]}>{label}</Text>
+      </View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -248,6 +255,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 14,
   },
+  circulo: {
+    width: 12,
+    height: 12,
+    borderRadius: 999,
+    backgroundColor: "#000",
+    marginRight: 8,
+  },
   cardTitle: {
     fontSize: 20,
     fontWeight: "bold",
@@ -305,6 +319,7 @@ const styles = StyleSheet.create({
   menuLeft: {
     flexDirection: "row",
     alignItems: "center",
+
   },
   menuIcon: {
     fontSize: 22,
