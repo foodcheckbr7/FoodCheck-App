@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   StatusBar,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Animated } from "react-native";
+
 
 type Alimento = {
   id: string;
@@ -48,6 +50,8 @@ export default function HomeScreen({
   irParaDesperdicio,
 }: any) {
   const [quantidadeVencendo, setQuantidadeVencendo] = useState(0);
+  const [quantidadeDentroValidade, setQuantidadeDentroValidade] = useState(0);
+  const [quantidadeAcompanhar, setQuantidadeAcompanhar] = useState(0);
 
   useEffect(() => {
     carregarQuantidadeVencendo();
@@ -58,6 +62,8 @@ export default function HomeScreen({
       const dadosSalvos = await AsyncStorage.getItem(CHAVE_ALIMENTOS);
 
       if (!dadosSalvos) {
+        setQuantidadeDentroValidade(0);
+        setQuantidadeAcompanhar(0);
         setQuantidadeVencendo(0);
         return;
       }
@@ -67,15 +73,19 @@ export default function HomeScreen({
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
 
-      const proximosDoVencimento = alimentos.filter((item) => {
+      let dentroValidade = 0;
+      let acompanhar = 0;
+      let proximosDoVencimento = 0;
+
+      alimentos.forEach((item) => {
         if (!item.dataValidade) {
-          return false;
+          return;
         }
 
         const vencimento = converterTextoParaData(item.dataValidade);
 
         if (!vencimento) {
-          return false;
+          return;
         }
 
         const diferencaEmMilissegundos = vencimento.getTime() - hoje.getTime();
@@ -83,12 +93,28 @@ export default function HomeScreen({
           diferencaEmMilissegundos / (1000 * 60 * 60 * 24),
         );
 
-        return diferencaEmDias >= 0 && diferencaEmDias <= 5;
+        if (diferencaEmDias >= 0 && diferencaEmDias <= 5) {
+          proximosDoVencimento += 1;
+          return;
+        }
+
+        if (diferencaEmDias >= 6 && diferencaEmDias <= 30) {
+          acompanhar += 1;
+          return;
+        }
+
+        if (diferencaEmDias > 30) {
+          dentroValidade += 1;
+        }
       });
 
-      setQuantidadeVencendo(proximosDoVencimento.length);
+      setQuantidadeDentroValidade(dentroValidade);
+      setQuantidadeAcompanhar(acompanhar);
+      setQuantidadeVencendo(proximosDoVencimento);
     } catch (error) {
       console.log("Erro ao carregar alimentos:", error);
+      setQuantidadeDentroValidade(0);
+      setQuantidadeAcompanhar(0);
       setQuantidadeVencendo(0);
     }
   }
@@ -138,8 +164,20 @@ export default function HomeScreen({
           <Text style={styles.arrow}>›</Text>
         </Pressable>
 
-        <Card label="Dentro da validade" color="#166534" cardColor="#DCFCE7" circuloColor="#22C55E"/>
-        <Card label="Itens para acompanhar" color="#92400E" cardColor="#FEF3C7" circuloColor="#F59E0B"/>
+        <Card
+          label="Itens dentro da validade"
+          color="#166534"
+          cardColor="#DCFCE7"
+          circuloColor="#22C55E"
+          quantidade = {quantidadeDentroValidade}
+        />
+        <Card
+          label="Itens para acompanhar"
+          color="#92400E"
+          cardColor="#FEF3C7"
+          circuloColor="#F59E0B"
+          quantidade = {quantidadeAcompanhar}
+        />
 
         <View style={styles.bottomNav}>
           <View style={styles.navItemActive}>
@@ -167,28 +205,65 @@ export default function HomeScreen({
   );
 }
 
-//Davi: em baixo eu criei um componente card caso queiram reutilizar
+function StatusDot({ color }: { color: string }) {
+  const opacity = useRef(new Animated.Value(0.4)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.4,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [opacity]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.circulo,
+        {
+          backgroundColor: color,
+          opacity,
+        },
+      ]}
+    />
+  );
+}
 
 function Card({
   label,
   cardColor,
   circuloColor,
   color,
+  quantidade,
 }: {
   label: string;
   cardColor: string;
   circuloColor: string;
   color: string;
+  quantidade: number
 }) {
   return (
-    <View style={[styles.menuItem, { backgroundColor: cardColor}]}>
+    <View style={[styles.menuItem, { backgroundColor: cardColor }]}>
       <View style={styles.menuLeft}>
-        <View style={[styles.circulo, { backgroundColor: circuloColor}]} />
-        <Text style={[styles.menuText, {color}]}>{label}</Text>
+        <StatusDot color={circuloColor}/>
+        <Text style={[styles.menuText, { color }]}>{label}</Text>
       </View>
+       <Text style={[styles.status, { color }]}>{quantidade}</Text>
     </View>
   );
 }
+
+
+
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -211,30 +286,6 @@ const styles = StyleSheet.create({
   greeting: {
     color: "#fff",
     fontSize: 30,
-    fontWeight: "bold",
-  },
-  bellContainer: {
-    position: "relative",
-  },
-  bell: {
-    fontSize: 24,
-    color: "#fff",
-  },
-  badge: {
-    position: "absolute",
-    top: -8,
-    right: -10,
-    backgroundColor: "red",
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 4,
-  },
-  badgeText: {
-    color: "#fff",
-    fontSize: 11,
     fontWeight: "bold",
   },
   card: {
@@ -265,8 +316,13 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#2f9e44",
+    color: "#c50101",
   },
+  status:  {
+    fontSize: 24,
+    fontWeight: "bold"
+  },
+
   infoIcon: {
     fontSize: 18,
     color: "#888",
@@ -319,7 +375,6 @@ const styles = StyleSheet.create({
   menuLeft: {
     flexDirection: "row",
     alignItems: "center",
-
   },
   menuIcon: {
     fontSize: 22,
