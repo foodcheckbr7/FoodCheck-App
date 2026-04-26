@@ -165,14 +165,14 @@ export default function HomeScreen({
         </Pressable>
 
         <Card
-          label="Itens dentro da validade"
+          label="Itens Dentro Da Validade"
           color="#166534"
           cardColor="#DCFCE7"
           circuloColor="#22C55E"
           quantidade = {quantidadeDentroValidade}
         />
         <Card
-          label="Itens para acompanhar"
+          label="Itens Para Acompanhar"
           color="#92400E"
           cardColor="#FEF3C7"
           circuloColor="#F59E0B"
