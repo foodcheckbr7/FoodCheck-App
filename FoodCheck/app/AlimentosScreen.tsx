@@ -161,9 +161,14 @@ export default function AlimentosScreen({
     return Math.ceil(diferencaEmMilissegundos / (1000 * 60 * 60 * 24));
   }
 
-  function estaVencido(dataValidadeTexto: string) {
+  function estaDentroDaValidade(dataValidadeTexto: string) {
     const dias = calcularDiasParaValidade(dataValidadeTexto);
-    return dias !== null && dias < 0;
+    return dias !== null && dias > 30;
+  }
+
+  function estaParaAcompanhar(dataValidadeTexto: string) {
+    const dias = calcularDiasParaValidade(dataValidadeTexto);
+    return dias !== null && dias >= 6 && dias <= 30;
   }
 
   function estaProximoDoVencimento(dataValidadeTexto: string) {
@@ -171,9 +176,28 @@ export default function AlimentosScreen({
     return dias !== null && dias >= 0 && dias <= 5;
   }
 
-  function dataPrecisaFicarVermelha(dataValidadeTexto: string) {
+  function estaVencido(dataValidadeTexto: string) {
     const dias = calcularDiasParaValidade(dataValidadeTexto);
-    return dias !== null && dias <= 5;
+    return dias !== null && dias < 0;
+  }
+
+  function obterCorStatusValidade(dataValidadeTexto: string) {
+    if (
+      estaVencido(dataValidadeTexto) ||
+      estaProximoDoVencimento(dataValidadeTexto)
+    ) {
+      return styles.dataVermelha;
+    }
+
+    if (estaParaAcompanhar(dataValidadeTexto)) {
+      return styles.dataAmarela;
+    }
+
+    if (estaDentroDaValidade(dataValidadeTexto)) {
+      return styles.dataVerde;
+    }
+
+    return null;
   }
 
   function renderStatusValidade(dataValidadeTexto: string) {
@@ -195,8 +219,12 @@ export default function AlimentosScreen({
       return `Validade: ${dataValidadeTexto} (vence hoje)`;
     }
 
-    if (dias <= 5) {
+    if (dias >= 1 && dias <= 5) {
       return `Validade: ${dataValidadeTexto} (${dias} dia(s) restante(s))`;
+    }
+
+    if (dias >= 6 && dias <= 30) {
+      return `Validade: ${dataValidadeTexto} (${dias} dia(s) restantes)`;
     }
 
     return `Validade: ${dataValidadeTexto}`;
@@ -317,30 +345,26 @@ export default function AlimentosScreen({
   }
 
   function handleConsumido(item: Alimento) {
-    Alert.alert(
-      "Confirmar",
-      `Deseja marcar "${item.nome}" como consumido?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Sim",
-          onPress: async () => {
-            await cancelarNotificacao(item.notificacaoId);
+    Alert.alert("Confirmar", `Deseja marcar "${item.nome}" como consumido?`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Sim",
+        onPress: async () => {
+          await cancelarNotificacao(item.notificacaoId);
 
-            const novaLista = alimentos.filter(
-              (alimento) => alimento.id !== item.id,
-            );
-            await salvarListaNoCelular(novaLista);
+          const novaLista = alimentos.filter(
+            (alimento) => alimento.id !== item.id,
+          );
+          await salvarListaNoCelular(novaLista);
 
-            if (idEditando === item.id) {
-              limparCampos();
-            }
+          if (idEditando === item.id) {
+            limparCampos();
+          }
 
-            Alert.alert("Sucesso", "Alimento removido da lista.");
-          },
+          Alert.alert("Sucesso", "Alimento removido da lista.");
         },
-      ],
-    );
+      },
+    ]);
   }
 
   function handleDescartar(item: Alimento) {
@@ -469,8 +493,7 @@ export default function AlimentosScreen({
                 <Text
                   style={[
                     styles.textoData,
-                    dataPrecisaFicarVermelha(item.dataValidade) &&
-                      styles.dataVermelha,
+                    obterCorStatusValidade(item.dataValidade),
                   ]}
                 >
                   {renderStatusValidade(item.dataValidade)}
@@ -656,11 +679,6 @@ const styles = StyleSheet.create({
     color: "#555",
   },
 
-  dataVermelha: {
-    color: "red",
-    fontWeight: "bold",
-  },
-
   areaBotoes: {
     flexDirection: "row",
     marginTop: 14,
@@ -708,5 +726,20 @@ const styles = StyleSheet.create({
     color: "#666",
     marginTop: 20,
     fontSize: 16,
+  },
+
+  dataVerde: {
+    color: "#2f9e44",
+    fontWeight: "bold",
+  },
+
+  dataAmarela: {
+    color: "#f59f00",
+    fontWeight: "bold",
+  },
+
+  dataVermelha: {
+    color: "#d62828",
+    fontWeight: "bold",
   },
 });
