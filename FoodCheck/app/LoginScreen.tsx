@@ -1,27 +1,30 @@
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
+  Alert,
+  Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
   TouchableWithoutFeedback,
-  Keyboard,
-  Image,
+  View,
 } from "react-native";
 
-export default function LoginScreen({ onLoginSuccess }: any) {
+export default function LoginScreen() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
 
   function handleLogin() {
     if (email === "teste@teste.com" && senha === "123456") {
-      onLoginSuccess();
+      router.replace("/HomeScreen");
     } else {
-      alert("Email ou senha incorretos");
+      Alert.alert("Erro", "Email ou senha incorretos");
     }
   }
 

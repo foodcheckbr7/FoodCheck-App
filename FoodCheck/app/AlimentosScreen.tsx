@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,6 +10,7 @@ import {
   Alert,
   SafeAreaView,
   KeyboardAvoidingView,
+  Linking,
   Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -71,10 +73,10 @@ function converterTextoParaData(dataTexto: string) {
   return data;
 }
 
-export default function AlimentosScreen({
-  voltar,
-  filtroInicial = "todos",
-}: any) {
+export default function AlimentosScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{ filtro?: string }>();
+  const filtroInicial = params.filtro === "proximos" ? "proximos" : "todos";
   const [nome, setNome] = useState("");
   const [dataCompra, setDataCompra] = useState(formatarDataHoje());
   const [dataValidade, setDataValidade] = useState("");
@@ -84,9 +86,11 @@ export default function AlimentosScreen({
 
   const listaRef = useRef<FlatList<Alimento>>(null);
 
-  useEffect(() => {
-    carregarAlimentos();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      carregarAlimentos();
+    }, []),
+  );
 
   useEffect(() => {
     setFiltro(filtroInicial);
@@ -228,6 +232,15 @@ export default function AlimentosScreen({
     }
 
     return `Validade: ${dataValidadeTexto}`;
+  }
+
+  function abrirReceitas(nomeAlimento: string) {
+    const alimentoFormatado = encodeURIComponent(nomeAlimento);
+    const url = `https://www.tudogostoso.com.br/busca?q=${alimentoFormatado}`;
+
+    Linking.openURL(url).catch(() => {
+      Alert.alert("Erro", "Não foi possível abrir as receitas.");
+    });
   }
 
   async function handleSalvarAlimento() {
@@ -418,7 +431,10 @@ export default function AlimentosScreen({
               <View style={styles.topoMovel}>
                 <Text style={styles.titulo}>Meus Alimentos</Text>
 
-                <TouchableOpacity style={styles.botaoVoltar} onPress={voltar}>
+                <TouchableOpacity
+                  style={styles.botaoVoltar}
+                  onPress={() => router.back()}
+                >
                   <Text style={styles.textoBotaoVoltar}>Voltar</Text>
                 </TouchableOpacity>
               </View>
@@ -521,6 +537,15 @@ export default function AlimentosScreen({
                     onPress={() => handleConsumido(item)}
                   >
                     <Text style={styles.textoBotaoConsumido}>Consumido</Text>
+                  </TouchableOpacity>
+                )}
+
+                {estaProximoDoVencimento(item.dataValidade) && (
+                  <TouchableOpacity
+                    style={styles.botaoReceita}
+                    onPress={() => abrirReceitas(item.nome)}
+                  >
+                    <Text style={styles.textoBotaoReceita}>Receita</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -716,7 +741,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
 
+  botaoReceita: {
+    backgroundColor: "#2f9e44",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+
   textoBotaoDescartar: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+
+  textoBotaoReceita: {
     color: "#fff",
     fontWeight: "bold",
   },

@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -45,17 +46,17 @@ function converterTextoParaData(dataTexto: string) {
   return data;
 }
 
-export default function HomeScreen({
-  irParaAlimentos,
-  irParaDesperdicio,
-}: any) {
+export default function HomeScreen() {
+  const router = useRouter();
   const [quantidadeVencendo, setQuantidadeVencendo] = useState(0);
   const [quantidadeDentroValidade, setQuantidadeDentroValidade] = useState(0);
   const [quantidadeAcompanhar, setQuantidadeAcompanhar] = useState(0);
 
-  useEffect(() => {
-    carregarQuantidadeVencendo();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      carregarQuantidadeVencendo();
+    }, []),
+  );
 
   async function carregarQuantidadeVencendo() {
     try {
@@ -120,15 +121,21 @@ export default function HomeScreen({
   }
 
   function handleVerItens() {
-    irParaAlimentos("proximos");
+    router.push({
+      pathname: "/AlimentosScreen",
+      params: { filtro: "proximos" },
+    });
   }
 
   function handleMeusAlimentos() {
-    irParaAlimentos("todos");
+    router.push({
+      pathname: "/AlimentosScreen",
+      params: { filtro: "todos" },
+    });
   }
 
   function handleDesperdicio() {
-    irParaDesperdicio();
+    router.push("/DesperdicioScreen");
   }
 
   return (

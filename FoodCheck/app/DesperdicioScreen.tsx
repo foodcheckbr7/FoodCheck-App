@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -46,12 +47,15 @@ function converterTextoParaData(dataTexto: string) {
   return data;
 }
 
-export default function DesperdicioScreen({ voltar }: any) {
+export default function DesperdicioScreen() {
+  const router = useRouter();
   const [itens, setItens] = useState<Desperdicio[]>([]);
 
-  useEffect(() => {
-    carregarDesperdicio();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      carregarDesperdicio();
+    }, []),
+  );
 
   async function carregarDesperdicio() {
     try {
@@ -100,7 +104,10 @@ export default function DesperdicioScreen({ voltar }: any) {
       <View style={styles.topo}>
         <Text style={styles.titulo}>Desperdício</Text>
 
-        <TouchableOpacity style={styles.botaoVoltar} onPress={voltar}>
+        <TouchableOpacity
+          style={styles.botaoVoltar}
+          onPress={() => router.back()}
+        >
           <Text style={styles.textoBotaoVoltar}>Voltar</Text>
         </TouchableOpacity>
       </View>
